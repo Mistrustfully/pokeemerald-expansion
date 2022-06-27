@@ -50,6 +50,8 @@
 #include "constants/trainers.h"
 #include "constants/weather.h"
 #include "constants/battle_config.h"
+#include "constants/field_move.h"
+#include "mgba_printf/mgba.h"
 
 struct SpeciesItem
 {
@@ -4693,6 +4695,9 @@ u32 GetBoxMonData(struct BoxPokemon *boxMon, s32 field, u8 *data)
                 | (substruct3->worldRibbon << 26);
         }
         break;
+    case MON_DATA_FIELD_MOVE:
+        retVal = boxMon->fieldMove;
+        break;
     default:
         break;
     }
@@ -5011,6 +5016,9 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
         substruct3->spDefenseIV = (ivs >> 25) & MAX_IV_MASK;
         break;
     }
+    case MON_DATA_FIELD_MOVE:
+        SET8(boxMon->fieldMove);
+        break;
     default:
         break;
     }
@@ -5030,10 +5038,15 @@ void CopyMon(void *dest, void *src, size_t size)
 u8 GiveMonToPlayer(struct Pokemon *mon)
 {
     s32 i;
+    u8 fieldMove = FIELD_MOVE_CHATTER;
 
     SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr->playerName);
     SetMonData(mon, MON_DATA_OT_GENDER, &gSaveBlock2Ptr->playerGender);
     SetMonData(mon, MON_DATA_OT_ID, gSaveBlock2Ptr->playerTrainerId);
+    SetMonData(mon, MON_DATA_FIELD_MOVE, &fieldMove);
+
+    MgbaPrintf(MGBA_LOG_INFO, "%d", GetMonData(mon, MON_DATA_FIELD_MOVE, NULL));
+
 
     for (i = 0; i < PARTY_SIZE; i++)
     {
@@ -5052,6 +5065,8 @@ u8 GiveMonToPlayer(struct Pokemon *mon)
 static u8 SendMonToPC(struct Pokemon* mon)
 {
     s32 boxNo, boxPos;
+    MgbaPrintf(MGBA_LOG_INFO, "%d", GetMonData(mon, MON_DATA_FIELD_MOVE, NULL));
+
 
     SetPCBoxToSendMon(VarGet(VAR_PC_BOX_TO_SEND_MON));
 
