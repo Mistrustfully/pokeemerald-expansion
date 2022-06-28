@@ -2532,6 +2532,7 @@ static void SetPartyMonSelectionActions(struct Pokemon *mons, u8 slotId, u8 acti
 static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
 {
     u8 i, j;
+    u8 fieldMove = GetMonData(&mons[slotId], MON_DATA_FIELD_MOVE);
 
     sPartyMenuInternal->numActions = 0;
     AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_SUMMARY);
@@ -2549,6 +2550,10 @@ static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
         }
     }
 
+    if (fieldMove != 0) {
+        AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, (fieldMove - 1) + MENU_FIELD_MOVES);
+    };
+
     if (!InBattlePike())
     {
         if (GetMonData(&mons[1], MON_DATA_SPECIES) != SPECIES_NONE)
@@ -2558,6 +2563,9 @@ static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
         else
             AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_ITEM);
     }
+
+    
+
     AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_CANCEL1);
 }
 
@@ -4750,6 +4758,14 @@ bool8 BoxMonKnowsMove(struct BoxPokemon *mon, u16 move)
         if (GetMonData(mon, MON_DATA_MOVE1 + i) == move)
             return TRUE;
     }
+    return FALSE;
+}
+
+bool8 MonKnowsFieldMove(struct Pokemon *mon, u8 move)
+{
+    if (GetMonData(mon, MON_DATA_FIELD_MOVE) == move)
+        return TRUE;
+
     return FALSE;
 }
 

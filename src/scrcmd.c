@@ -49,6 +49,7 @@
 #include "tv.h"
 #include "window.h"
 #include "constants/event_objects.h"
+#include "constants/field_move.h"
 
 typedef u16 (*SpecialFunc)(void);
 typedef void (*NativeFunc)(void);
@@ -1732,6 +1733,33 @@ bool8 ScrCmd_checkpartymove(struct ScriptContext *ctx)
         }
     }
     return FALSE;
+}
+
+// Checks both the moves of the mon and the field move of the mon. Used for SURF, STRENGTH, CUT, etc.
+bool8 ScrCmd_checkpartyfieldmove(struct ScriptContext *ctx)
+{
+    u8 i;
+    u16 fieldMoveId = ScriptReadHalfword(ctx);
+
+    gSpecialVar_Result = PARTY_SIZE;
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL);
+        if (!species)
+            break;
+        
+        if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG) && 
+            (
+                MonKnowsMove(&gPlayerParty[i], fieldMoveToMove[fieldMoveId]) == TRUE || 
+                MonKnowsFieldMove(&gPlayerParty[i], fieldMoveId) == TRUE
+            )
+        )
+        {
+            gSpecialVar_Result = i;
+            gSpecialVar_0x8004 = species;
+            break;
+        }
+    }
 }
 
 bool8 ScrCmd_addmoney(struct ScriptContext *ctx)

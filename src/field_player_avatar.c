@@ -29,6 +29,8 @@
 #include "constants/moves.h"
 #include "constants/songs.h"
 #include "constants/trainer_types.h"
+#include "constants/field_move.h"
+#include "mgba_printf/mgba.h"
 
 #define NUM_FORCED_MOVEMENTS 18
 #define NUM_ACRO_BIKE_COLLISIONS 5
@@ -1285,8 +1287,12 @@ bool8 PartyHasMonWithSurf(void)
                 break;
             if (MonKnowsMove(&gPlayerParty[i], MOVE_SURF))
                 return TRUE;
+            if (GetMonData(&gPlayerParty[i], MON_DATA_FIELD_MOVE) == FIELD_MOVE_SURF) {
+                return TRUE;
+            }
         }
     }
+
     return FALSE;
 }
 
