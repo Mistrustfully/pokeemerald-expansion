@@ -48,12 +48,14 @@
 #include "constants/rgb.h"
 #include "constants/songs.h"
 #include "constants/battle_config.h"
+#include "constants/field_move.h"
 
 enum {
     PSS_PAGE_INFO,
     PSS_PAGE_SKILLS,
     PSS_PAGE_BATTLE_MOVES,
     PSS_PAGE_CONTEST_MOVES,
+    PSS_PAGE_FIELD_MOVES,
     PSS_PAGE_COUNT,
 };
 
@@ -166,6 +168,7 @@ static EWRAM_DATA struct PokemonSummaryScreenData
         u8 sanity; // 0x35
         u8 OTName[17]; // 0x36
         u32 OTID; // 0x48
+        u8 fieldMove; // 0x49
     } summary;
     u16 bgTilemapBuffers[PSS_PAGE_COUNT][2][0x400];
     u8 mode;
@@ -284,6 +287,8 @@ static void Task_PrintBattleMoves(u8 taskId);
 static void PrintMoveNameAndPP(u8 a);
 static void PrintContestMoves(void);
 static void Task_PrintContestMoves(u8 taskId);
+static void PrintFieldMoves(void);
+static void Task_PrintFieldMoves(u8 taskId);
 static void PrintContestMoveDescription(u8 a);
 static void PrintMoveDetails(u16 a);
 static void PrintNewMoveDetailsOrCancelText(void);
@@ -299,6 +304,8 @@ static void SetMonTypeIcons(void);
 static void SetMoveTypeIcons(void);
 static void SetContestMoveTypeIcons(void);
 static void SetNewMoveTypeIcon(void);
+static void SetNewFieldTypeIcon(void);
+static void SetFieldTypeIcons(void);
 static void SwapMovesTypeSprites(u8 moveIndex1, u8 moveIndex2);
 static u8 LoadMonGfxAndSprite(struct Pokemon *a, s16 *b);
 static u8 CreateMonSprite(struct Pokemon *unused);
@@ -658,7 +665,7 @@ static const struct WindowTemplate sPageSkillsTemplate[] =
         .baseBlock = 543,
     },
 };
-static const struct WindowTemplate sPageMovesTemplate[] = // This is used for both battle and contest moves
+static const struct WindowTemplate sPageMovesTemplate[] = // This is used for both battle, field, and contest moves
 {
     [PSS_DATA_WINDOW_MOVE_NAMES] = {
         .bg = 0,
@@ -713,7 +720,8 @@ static void (*const sTextPrinterFunctions[])(void) =
     [PSS_PAGE_INFO] = PrintInfoPageText,
     [PSS_PAGE_SKILLS] = PrintSkillsPageText,
     [PSS_PAGE_BATTLE_MOVES] = PrintBattleMoves,
-    [PSS_PAGE_CONTEST_MOVES] = PrintContestMoves
+    [PSS_PAGE_CONTEST_MOVES] = PrintContestMoves,
+    [PSS_PAGE_FIELD_MOVES] = PrintFieldMoves
 };
 
 static void (*const sTextPrinterTasks[])(u8 taskId) =
@@ -721,7 +729,8 @@ static void (*const sTextPrinterTasks[])(u8 taskId) =
     [PSS_PAGE_INFO] = Task_PrintInfoPage,
     [PSS_PAGE_SKILLS] = Task_PrintSkillsPage,
     [PSS_PAGE_BATTLE_MOVES] = Task_PrintBattleMoves,
-    [PSS_PAGE_CONTEST_MOVES] = Task_PrintContestMoves
+    [PSS_PAGE_CONTEST_MOVES] = Task_PrintContestMoves,
+    [PSS_PAGE_FIELD_MOVES] = Task_PrintFieldMoves
 };
 
 static const u8 sMemoNatureTextColor[] = _("{COLOR LIGHT_RED}{SHADOW GREEN}");
@@ -1480,6 +1489,7 @@ static bool8 ExtractMonDataToSummaryStruct(struct Pokemon *mon)
         sum->item = GetMonData(mon, MON_DATA_HELD_ITEM);
         sum->pid = GetMonData(mon, MON_DATA_PERSONALITY);
         sum->sanity = GetMonData(mon, MON_DATA_SANITY_IS_BAD_EGG);
+        sum->fieldMove = GetMonData(mon, MON_DATA_FIELD_MOVE);
 
         if (sum->sanity)
             sum->isEgg = TRUE;
@@ -3628,6 +3638,34 @@ static void PrintMoveNameAndPP(u8 moveIndex)
     PrintTextOnWindow(ppValueWindowId, text, x, moveIndex * 16 + 1, 0, ppState);
 }
 
+static void PrintFieldMove()
+{
+    const u8 *text;
+    int x;
+    struct PokeSummary *summary = &sMonSummaryScreen->summary;
+    u8 moveNameWindowId = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
+    u8 fieldMove = summary->fieldMove;
+    u16 move = fieldMoveToMove[fieldMove];
+
+    if (move != 0)
+    {
+        PrintTextOnWindow(moveNameWindowId, gMoveNames[move], 0, 1, 0, 1);
+        DynamicPlaceholderTextUtil_Reset();
+        DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
+        DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar2);
+        text = gStringVar4;
+
+        x = GetStringRightAlignXOffset(FONT_NORMAL, text, 44);
+    }
+    else
+    {
+        PrintTextOnWindow(moveNameWindowId, gText_OneDash, 0, 1, 0, 1);
+        text = gText_TwoDashes;
+
+        x = GetStringCenterAlignXOffset(FONT_NORMAL, text, 44);
+    }
+}
+
 static void PrintMovePowerAndAccuracy(u16 moveIndex)
 {
     const u8 *text;
@@ -3710,6 +3748,61 @@ static void Task_PrintContestMoves(u8 taskId)
     }
     data[0]++;
 }
+
+static void PrintFieldMoves(void)
+{
+    struct PokeSummary *summary = &sMonSummaryScreen->summary;
+
+    u8 moveNameWindowId = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
+    u8 move = summary->fieldMove;
+
+    PrintTextOnWindow(moveNameWindowId, gMoveNames[fieldMoveToMove[move]], 0, 1, 0, 1);
+
+
+     if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
+    {
+        PrintNewMoveDetailsOrCancelText();
+        PrintMoveDetails(fieldMoveToMove[move]);
+    }
+}
+
+
+static void Task_PrintFieldMoves(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    switch (data[0])
+    {
+    case 1:
+        PrintFieldMove();
+        break;
+    case 2:
+        if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
+            PrintNewMoveDetailsOrCancelText();
+        break;
+    case 3:
+        if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
+        {
+            if (sMonSummaryScreen->firstMoveIndex == MAX_MON_MOVES)
+                data[1] = sMonSummaryScreen->newMove;
+            else
+                data[1] = sMonSummaryScreen->summary.moves[sMonSummaryScreen->firstMoveIndex];
+        }
+        break;
+    case 4:
+        if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
+        {
+            if (sMonSummaryScreen->newMove != MOVE_NONE || sMonSummaryScreen->firstMoveIndex != MAX_MON_MOVES)
+                PrintMoveDetails(data[1]);
+        }
+        break;
+    case 5:
+        DestroyTask(taskId);
+        return;
+    }
+    data[0]++;
+}
+
 
 static void PrintContestMoveDescription(u8 moveSlot)
 {
@@ -3859,6 +3952,10 @@ static void SetTypeIcons(void)
         SetContestMoveTypeIcons();
         SetNewMoveTypeIcon();
         break;
+    case PSS_PAGE_FIELD_MOVES:
+        SetFieldTypeIcons();
+        SetNewFieldTypeIcon();
+        break;
     }
 }
 
@@ -3948,6 +4045,31 @@ static void SetNewMoveTypeIcon(void)
             SetTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + gContestMoves[sMonSummaryScreen->newMove].contestCategory, 85, 96, SPRITE_ARR_ID_TYPE + 4);
     }
 }
+
+static void SetFieldTypeIcons(void)
+{
+    struct PokeSummary *summary = &sMonSummaryScreen->summary;
+    if (summary->fieldMove != FIELD_MOVE_NONE)
+            SetTypeSpritePosAndPal(gBattleMoves[fieldMoveToMove[summary->fieldMove]].type, 85, 32, SPRITE_ARR_ID_TYPE);
+        else
+            SetSpriteInvisibility(SPRITE_ARR_ID_TYPE, TRUE);
+}
+
+static void SetNewFieldTypeIcon(void)
+{
+    if (sMonSummaryScreen->newMove == MOVE_NONE)
+    {
+        SetSpriteInvisibility(SPRITE_ARR_ID_TYPE + 4, TRUE);
+    }
+    else
+    {
+        if (sMonSummaryScreen->currPageIndex == PSS_PAGE_BATTLE_MOVES)
+            SetTypeSpritePosAndPal(gBattleMoves[sMonSummaryScreen->newMove].type, 85, 96, SPRITE_ARR_ID_TYPE + 4);
+        else
+            SetTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + gContestMoves[sMonSummaryScreen->newMove].contestCategory, 85, 96, SPRITE_ARR_ID_TYPE + 4);
+    }
+}
+
 
 static void SwapMovesTypeSprites(u8 moveIndex1, u8 moveIndex2)
 {
