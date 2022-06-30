@@ -49,6 +49,7 @@
 #include "constants/songs.h"
 #include "constants/battle_config.h"
 #include "constants/field_move.h"
+#include "mgba_printf/mgba.h"
 
 enum {
     PSS_PAGE_INFO,
@@ -1628,7 +1629,7 @@ static void Task_HandleInput(u8 taskId)
         }
         else if (JOY_NEW(A_BUTTON))
         {
-            if (sMonSummaryScreen->currPageIndex != PSS_PAGE_SKILLS)
+            if (sMonSummaryScreen->currPageIndex != PSS_PAGE_SKILLS && sMonSummaryScreen->currPageIndex !=  PSS_PAGE_FIELD_MOVES)
             {
                 if (sMonSummaryScreen->currPageIndex == PSS_PAGE_INFO)
                 {
@@ -3757,12 +3758,12 @@ static void PrintFieldMoves(void)
     u8 move = summary->fieldMove;
 
     PrintTextOnWindow(moveNameWindowId, gMoveNames[fieldMoveToMove[move]], 0, 1, 0, 1);
-
+    PrintMoveDetails(move);
 
      if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
     {
         PrintNewMoveDetailsOrCancelText();
-        PrintMoveDetails(fieldMoveToMove[move]);
+        PrintMoveDetails(move);
     }
 }
 
@@ -3770,6 +3771,7 @@ static void PrintFieldMoves(void)
 static void Task_PrintFieldMoves(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    struct PokeSummary *summary = &sMonSummaryScreen->summary;
 
     switch (data[0])
     {
@@ -3777,26 +3779,9 @@ static void Task_PrintFieldMoves(u8 taskId)
         PrintFieldMove();
         break;
     case 2:
-        if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
-            PrintNewMoveDetailsOrCancelText();
+        PrintMoveDetails(summary->fieldMove);
         break;
     case 3:
-        if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
-        {
-            if (sMonSummaryScreen->firstMoveIndex == MAX_MON_MOVES)
-                data[1] = sMonSummaryScreen->newMove;
-            else
-                data[1] = sMonSummaryScreen->summary.moves[sMonSummaryScreen->firstMoveIndex];
-        }
-        break;
-    case 4:
-        if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
-        {
-            if (sMonSummaryScreen->newMove != MOVE_NONE || sMonSummaryScreen->firstMoveIndex != MAX_MON_MOVES)
-                PrintMoveDetails(data[1]);
-        }
-        break;
-    case 5:
         DestroyTask(taskId);
         return;
     }
@@ -3826,17 +3811,27 @@ static void PrintMoveDetails(u16 move)
     FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
     if (move != MOVE_NONE)
     {
-        if (sMonSummaryScreen->currPageIndex == PSS_PAGE_BATTLE_MOVES)
+
+        switch(sMonSummaryScreen->currPageIndex) 
         {
-            if (B_SHOW_SPLIT_ICON == TRUE)
-                ShowSplitIcon(GetBattleMoveSplit(move));
-            PrintMovePowerAndAccuracy(move);
-            PrintTextOnWindow(windowId, gMoveDescriptionPointers[move - 1], 6, 1, 0, 0);
+            case PSS_PAGE_BATTLE_MOVES:
+                if (B_SHOW_SPLIT_ICON == TRUE)
+                    ShowSplitIcon(GetBattleMoveSplit(move));
+                PrintMovePowerAndAccuracy(move);
+                PrintTextOnWindow(windowId, gMoveDescriptionPointers[move - 1], 6, 1, 0, 0);
+                break;
+
+            case PSS_PAGE_CONTEST_MOVES:
+                PrintTextOnWindow(windowId, gContestEffectDescriptionPointers[gContestMoves[move].effect], 6, 1, 0, 0);
+                break;
+
+            case PSS_PAGE_FIELD_MOVES:
+                MgbaPrintf(MGBA_LOG_INFO, "%d", move);
+                MgbaPrintf(MGBA_LOG_INFO, "%s", gFieldMoveDescriptionPointers[move - 1]);
+                PrintTextOnWindow(windowId, gFieldMoveDescriptionPointers[move - 1], 6, 1, 0, 0);
+                break;
         }
-        else
-        {
-            PrintTextOnWindow(windowId, gContestEffectDescriptionPointers[gContestMoves[move].effect], 6, 1, 0, 0);
-        }
+
         PutWindowTilemap(windowId);
     }
     else
@@ -3860,7 +3855,7 @@ static void PrintNewMoveDetailsOrCancelText(void)
     {
         u16 move = sMonSummaryScreen->newMove;
 
-        if (sMonSummaryScreen->currPageIndex == PSS_PAGE_BATTLE_MOVES)
+        if (sMonSummaryScreen->currPageIndex != PSS_PAGE_CONTEST_MOVES)
             PrintTextOnWindow(windowId1, gMoveNames[move], 0, 65, 0, 6);
         else
             PrintTextOnWindow(windowId1, gMoveNames[move], 0, 65, 0, 5);
@@ -4041,7 +4036,7 @@ static void SetNewMoveTypeIcon(void)
     {
         if (sMonSummaryScreen->currPageIndex == PSS_PAGE_BATTLE_MOVES)
             SetTypeSpritePosAndPal(gBattleMoves[sMonSummaryScreen->newMove].type, 85, 96, SPRITE_ARR_ID_TYPE + 4);
-        else
+        else if (sMonSummaryScreen->currPageIndex == PSS_PAGE_CONTEST_MOVES)
             SetTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + gContestMoves[sMonSummaryScreen->newMove].contestCategory, 85, 96, SPRITE_ARR_ID_TYPE + 4);
     }
 }

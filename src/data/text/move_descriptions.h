@@ -3705,3 +3705,73 @@ const u8 *const gMoveDescriptionPointers[MOVES_COUNT - 1] =
     [MOVE_ASTRAL_BARRAGE - 1] = sAstralBarrageDescription,
     [MOVE_EERIE_SPELL - 1] = sEerieSpellDescription,
 };
+
+// field move stuff
+
+static const u8 sMoveCut[] = _(
+    "Can be used to cut down small\n"
+    "trees.");
+
+static const u8 sMoveFlash[] = _(
+    "Lights up dark caves");
+
+static const u8 sMoveRockSmash[] = _(
+    "Destroys small rocks in one\n"
+    "punch.");
+
+static const u8 sMoveStrength[] = _(
+    "Use incredible strength to\n"
+    "move large rocks.");
+
+static const u8 sMoveSurf[] = _(
+    "Surf the ocean on the back\n"
+    "of your Pokémon.");
+
+static const u8 sMoveFly[] = _(
+    "Fly on the back of your\n"
+    "Pokémon to a previous location.");
+
+static const u8 sMoveDive[] = _(
+    "Dive underwater on your Pokémon\n"
+    "to reach the bottom of the ocean.");
+
+static const u8 sMoveWaterfall[] = _(
+    "Surf up a waterfall on the back\n"
+    "of your Pokémon.");
+
+static const u8 sMoveTeleport[] = _(
+    "Teleport to the last visited \n"
+    "Pokécenter.");
+
+static const u8 sMoveDig[] = _(
+    "Dig your way out of\n"
+    "the current cave.");
+
+static const u8 sMoveSecretPower[] = _(
+    "do thing");
+
+static const u8 sMoveMilkDrink[] = _(
+    "Transfer some health of one\n"
+    "Pokémon to another.");
+
+static const u8 sMoveSweetScent[] = _(
+    "Causes a wild encounter even if a\n"
+    "Repel is in effect.");
+
+const u8 *const gFieldMoveDescriptionPointers[FIELD_MOVES_COUNT - 1] =
+{
+    [FIELD_MOVE_CUT - 1] = sMoveCut,
+    [FIELD_MOVE_FLASH - 1] = sMoveFlash,
+    [FIELD_MOVE_ROCK_SMASH - 1] = sMoveRockSmash,
+    [FIELD_MOVE_STRENGTH - 1] = sMoveStrength,
+    [FIELD_MOVE_SURF - 1] = sMoveSurf,
+    [FIELD_MOVE_FLY - 1] = sMoveFly,
+    [FIELD_MOVE_DIVE - 1] = sMoveDive,
+    [FIED_MOVE_WATERFALL - 1] = sMoveWaterfall,
+    [FIELD_MOVE_TELEPORT - 1] = sMoveTeleport,
+    [FIELD_MOVE_DIG - 1] = sMoveDig,
+    [FIELD_MOVE_SECRET_POWER - 1] = sMoveSecretPower,
+    [FIELD_MOVE_MILK_DRINK - 1] = sMoveMilkDrink,
+    [FIELD_MOVE_SOFT_BOILED - 1] = sMoveMilkDrink,
+    [FIELD_MOVE_SWEET_SCENT - 1] = sMoveSweetScent,
+};
